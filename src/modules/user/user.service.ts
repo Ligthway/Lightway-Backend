@@ -13,7 +13,7 @@ export class UserService {
     async findByEmail(email :string){
         const result=await this.databaseService.database
             .select()
-            .from('users')
+            .from(users)                        // was .from('users')
             .where(eq(users.email, email))
             .limit(1);
         return result[0] || null;
@@ -42,16 +42,15 @@ export class UserService {
     }
     async create(user:CreateUserDto) {
         const saltRounds=10;
-        const hashedPassword=await bcrypt.hash(user.password, saltRounds);
-        const result = await this.databaseService.database
+        const passwordHash=await bcrypt.hash(user.password, saltRounds);
+        const [result] = await this.databaseService.database
             .insert(users)
             .values({
                 email: user.email,
-                password:hashedPassword,
+                passwordHash,
                 role: user.role,
-                createdAt:new Date().getTime(),
-                firstName:users.firstName,
-                lastName:users.lastName,
+                firstName: user.firstName,       // fixed reference
+                lastName: user.lastName,         // fixed reference
             })
             .returning({
                 id: users.id,
@@ -61,7 +60,7 @@ export class UserService {
                 role: users.role,
                 createdAt: users.createdAt,
             });
-        return result[0];
+        return result;
     }
     async updateLastLogin(userId:string){
         await this.databaseService.database.update(users).set({lastLogin:new Date()}).where(eq(users.id, userId));

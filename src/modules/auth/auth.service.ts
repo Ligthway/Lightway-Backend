@@ -17,10 +17,8 @@ export class AuthService {
     ){};
     async validateUser(email:string, password:string){
         const user= await this.userService.findByEmail(email);
-        if(!user)
-            return null;
-        if(!user.isActive)
-            throw new UnauthorizedException('Account is deactivated');
+        if(!user) return null;
+        if(!user.isActive) throw new UnauthorizedException('Account is deactivated');
         const isPasswordValid=await this.userService.validatePassword(password, user.passwordHash);
 
         if(isPasswordValid){
@@ -30,8 +28,10 @@ export class AuthService {
         return null;
     }
     async login(loginDto:LoginDto){
-            const user=await this.userService.findByEmail(loginDto.email);
-            await this.userService.updateLastLogin(user.id);
+        const user=await this.validateUser(loginDto.email, loginDto.password);
+        if(!user) throw new UnauthorizedException('Invalid or expired login');
+
+        await this.userService.updateLastLogin(user.id);
 
         const payload = {
             sub: user.id,
@@ -41,7 +41,7 @@ export class AuthService {
             lastName: user.lastName,
         };
 
-        const accessToken=this.jwtService.sign(payload, {expiresIn: '15m'});
+        const accessToken=this.jwtService.sign(payload, {expiresIn: process.env.JWT_EXPIRATION});
         const refreshToken=this.generateRefreshToken(user.id);
 
         return{
@@ -62,6 +62,7 @@ export class AuthService {
         const expiresAt=new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);//7 days
         await this.databaseService.database.insert(refreshTokens).values({
+            id: uuidv4(),             // ADD: primary key for refresh token
             userId, token, expiresAt
         });
         return token;
