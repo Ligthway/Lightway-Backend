@@ -1,109 +1,70 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException
+} from '@nestjs/common';
+import { CommonService } from '@common/services/common.service';
 import { JwtService } from '@nestjs/jwt';
-import { UserService} from "../user/user.service";
-import { DatabaseService } from '../../database/database.service';
-import { refreshTokens } from '../../database/schema';
 import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
-import {LoginDto} from "../user/DTO/login-dto";
-
+import { BcryptUtils } from '@common/utils/bcrypt.utils';
+import { firstRow } from '@common/utils/drizzle.utils';
+import { users } from '@schema/users';
+import { throwUnauthorizedException } from '@common/exceptions/unauthorized.exception';
+import { RegisterDto } from '@modules/auth/dto/register.dto';
+import { throwConflictException } from '@common/exceptions/conflict.exception';
 
 @Injectable()
-export class AuthService {
-    constructor(
-        private readonly userService: UserService,
-        private readonly jwtService: JwtService,
-        private databaseService: DatabaseService,
-    ){};
-    async validateUser(email:string, password:string){
-        const user= await this.userService.findByEmail(email);
-        if(!user) return null;
-        if(!user.isActive) throw new UnauthorizedException('Account is deactivated');
-        const isPasswordValid=await this.userService.validatePassword(password, user.passwordHash);
+export class AuthService extends CommonService {
+  constructor(private readonly jwtService: JwtService) {
+    super();
+  }
 
-        if(isPasswordValid){
-            const {passwordHash, ...userWithoutPassword}=user;
-            return userWithoutPassword;
-        }
-        return null;
-    }
-    async login(loginDto:LoginDto){
-        const user=await this.validateUser(loginDto.email, loginDto.password);
-        if(!user) throw new UnauthorizedException('Invalid or expired login');
+  async validateUser(
+    email: string,
+    password: string
+  ): Promise<{
+    token: string;
+  }> {
+    const user = await firstRow(
+      this.db
+        .select({
+          id: users.id,
+          password: users.password,
+          role: users.role
+        })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1)
+    );
 
-        await this.userService.updateLastLogin(user.id);
-
-        const payload = {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        };
-
-        const accessToken=this.jwtService.sign(payload, {expiresIn: process.env.JWT_EXPIRATION});
-        const refreshToken=this.generateRefreshToken(user.id);
-
-        return{
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-            },
-        };
-
-    }
-    async generateRefreshToken(userId:string){
-        const token=uuidv4();
-        const expiresAt=new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);//7 days
-        await this.databaseService.database.insert(refreshTokens).values({
-            id: uuidv4(),             // ADD: primary key for refresh token
-            userId, token, expiresAt
-        });
-        return token;
+    if (
+      user &&
+      (await BcryptUtils.comparePasswords(password, user.password!))
+    ) {
+      return {
+        token: this.jwtService.sign({
+          userID: user.id,
+          role: user.role
+        })
+      };
     }
 
-
-    async refreshAccessToken(refreshToken: string) {
-        const tokenRecord = await this.databaseService.database
-            .select()
-            .from(refreshTokens)
-            .where(eq(refreshTokens.token, refreshToken))
-            .limit(1);
-        if (!tokenRecord[0] || tokenRecord[0].expiresAt < new Date()) {
-            throw new UnauthorizedException('Invalid or expired refresh token');
-        }
-
-
-        const user = await this.userService.findById(tokenRecord[0].userId);
-        const payload = {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        };
-        const accessToken = this.jwtService.sign(payload, { expiresIn: process.env.JWT_EXPIRATION });
-
-        return {
-            access_token: accessToken,
-            user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-            },
-        };
+    throwUnauthorizedException('Incorrect email or password');
+  }
+  async register(registerDto: RegisterDto) {
+    try {
+      await this.db.insert(users).values({
+        email: registerDto.email,
+        password: await BcryptUtils.hashPassword(registerDto.password),
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        userName: registerDto.username,
+        role: 'user'
+      });
+    } catch (e) {
+      if (e.code === '23505') {
+        throwConflictException('Email already in use');
+      }
+      throw new InternalServerErrorException();
     }
-    async logout(refreshToken: string) {
-        await this.databaseService.database
-            .delete(refreshTokens)
-            .where(eq(refreshTokens.token, refreshToken));
-    }
+  }
 }

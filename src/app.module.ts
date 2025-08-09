@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UserModule } from './modules/user/user.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { DatabaseService } from './database/database.service';
-import { DatabaseModule } from './database/database.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthenticatedGuard } from '@guards/authenticated.guard';
+import { AuthModule } from '@modules/auth/auth.module';
+import { DatabaseModule } from '@config/database.module';
+import { LocalStorageModule } from '@config/local-storage.module';
 
 @Module({
-  imports: [UserModule, AuthModule, DatabaseModule],
-  controllers: [AppController],
-  providers: [AppService, DatabaseService],
+  imports: [DatabaseModule, LocalStorageModule, AuthModule],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticatedGuard
+    }
+  ]
 })
 export class AppModule {}

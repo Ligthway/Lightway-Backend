@@ -1,33 +1,33 @@
-import { Controller, Post, Body, UseGuards, Get, Request, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { LoginDto} from "../user/DTO/login-dto";
-import { RefreshTokenDto} from "../user/DTO/RefreshTokenDto";
-import { JwtAuthGuard} from "./Guards/jwt-auth/jwt-auth.guard";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Req,
+  UseGuards
+} from '@nestjs/common';
+import { LocalAuthGuard } from './guards/local.guard';
+import { Public } from '@common/decorators/public.decorator';
+import { LoginDto } from './dto/login.dto';
+import { Request } from 'express';
+import { RegisterDto } from '@modules/auth/dto/register.dto';
+import { AuthService } from '@modules/auth/auth.service';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
-    @Post('login')
-    async login(@Body() loginDto: LoginDto) {
-        const user=await this.authService.validateUser(loginDto.email, loginDto.password);
-        if(!user) {
-            throw new UnauthorizedException('Invalid email or password');
-        }
-        return this.authService.login(loginDto);
-    }
+  constructor(private readonly authService: AuthService) {}
 
+  @Post('login')
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  @HttpCode(200)
+  async login(@Body() loginDto: LoginDto, @Req() req: Request & { user: any }) {
+    return req.user;
+  }
 
-
-    @Post('refresh')
-    async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
-        return this.authService.refreshAccessToken(refreshTokenDto.token);
-    }
-
-
-
-    @Post('logout')
-    async logout(@Body() refreshTokenDto: RefreshTokenDto) {
-        await this.authService.logout(refreshTokenDto.token);
-        return { message: 'Logged out successfully' };
-    }
+  @Post('register')
+  @Public()
+  register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
+  }
 }
