@@ -15,6 +15,7 @@ import { AuthService } from '@modules/auth/auth.service';
 import { RolesGuard } from '@guards/roles.guard';
 import { Roles } from '@common/enums/roles.enum';
 import { Role } from '@common/decorators/roles.decorator';
+import { LocManDto } from '@modules/auth/dto/loc-man.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +33,13 @@ export class AuthController {
   @Public()
   register(@Body() registerDto: RegisterDto) {
     return this.authService.registerOrgAdmin(registerDto);
+  }
+
+  @Post('register-location-manager')
+  @UseGuards(RolesGuard)
+  @Role(Roles.OrganizationAdmin)
+  registerLocationManager(@Body() locManDto: LocManDto) {
+    return this.authService.registerLocManager(locManDto);
   }
 }
 

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CommonService } from '@common/services/common.service';
 import { JwtService } from '@nestjs/jwt';
 import { eq } from 'drizzle-orm';
@@ -11,13 +8,18 @@ import { users } from '@schema/users';
 import { throwUnauthorizedException } from '@common/exceptions/unauthorized.exception';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
 import { throwConflictException } from '@common/exceptions/conflict.exception';
-import {Roles} from '@common/enums/roles.enum'
+import { Roles } from '@common/enums/roles.enum';
+import { LocManDto } from '@modules/auth/dto/loc-man.dto';
+import {OrganizationModuleService} from '@modules/organization-module/organization-module.service';
 
 @Injectable()
 export class AuthService extends CommonService {
-  constructor(private readonly jwtService: JwtService) {
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly orgService: OrganizationModuleService) {
     super();
   }
+
 
   async validateUser(
     email: string,
@@ -51,6 +53,7 @@ export class AuthService extends CommonService {
 
     throwUnauthorizedException('Incorrect email or password');
   }
+
   async registerOrgAdmin(registerDto: RegisterDto) {
     try {
       await this.db.insert(users).values({
@@ -59,7 +62,27 @@ export class AuthService extends CommonService {
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
         userName: registerDto.username,
-        role: Roles.OrganizationAdmin,
+        role: Roles.OrganizationAdmin
+      });
+    } catch (e) {
+      if (e.code === '23505') {
+        throwConflictException('Email already in use');
+      }
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async registerLocManager(locManDto: LocManDto) {
+    const org = await this.orgService.findOne(locManDto.organizationName);
+    try {
+      await this.db.insert(users).values({
+        email: locManDto.email,
+        password: await BcryptUtils.hashPassword(locManDto.password),
+        firstName: locManDto.firstName,
+        lastName: locManDto.lastName,
+        userName: locManDto.username,
+        role: Roles.LocationManager,
+        organizationId: org.id
       });
     } catch (e) {
       if (e.code === '23505') {

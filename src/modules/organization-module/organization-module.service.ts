@@ -5,6 +5,8 @@ import { CommonService } from '@common/services/common.service';
 import { throwConflictException } from '@common/exceptions/conflict.exception';
 import { organizations } from '@schema/organizations';
 import { InternalServerErrorException } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { throwNotFound } from '@common/exceptions/not-found.exception';
 
 @Injectable()
 export class OrganizationModuleService extends CommonService {
@@ -29,8 +31,16 @@ export class OrganizationModuleService extends CommonService {
     return `This action returns all organizationModule`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} organizationModule`;
+  async findOne(name: string) {
+    const rows = await this.db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.name, name))
+      .limit(1);
+    if (rows.length === 0) {
+      throwNotFound('Organization not found');
+    }
+    return rows[0];
   }
 
   update(id: number, updateOrganizationModuleDto: UpdateOrganizationModuleDto) {

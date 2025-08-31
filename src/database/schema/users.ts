@@ -5,6 +5,7 @@ import {
   integer,
   text
 } from 'drizzle-orm/pg-core';
+import {organizations} from './organizations';
 
 export const userRoleEnum = pgEnum('user_role', [Roles.EndUser, Roles.LocationManager, Roles.OrganizationAdmin]);
 
@@ -15,5 +16,6 @@ export const users = pgTable('users', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   userName: text('username').notNull().unique(),
-  role: userRoleEnum('role').notNull()
+  role: userRoleEnum('role').notNull(),
+  organizationId: integer('organization_id').references(() => organizations.id),
 });
