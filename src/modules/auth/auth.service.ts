@@ -11,6 +11,7 @@ import { users } from '@schema/users';
 import { throwUnauthorizedException } from '@common/exceptions/unauthorized.exception';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
 import { throwConflictException } from '@common/exceptions/conflict.exception';
+import {Roles} from '@common/enums/roles.enum'
 
 @Injectable()
 export class AuthService extends CommonService {
@@ -50,7 +51,7 @@ export class AuthService extends CommonService {
 
     throwUnauthorizedException('Incorrect email or password');
   }
-  async register(registerDto: RegisterDto) {
+  async registerOrgAdmin(registerDto: RegisterDto) {
     try {
       await this.db.insert(users).values({
         email: registerDto.email,
@@ -58,7 +59,7 @@ export class AuthService extends CommonService {
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
         userName: registerDto.username,
-        role: 'user'
+        role: Roles.OrganizationAdmin,
       });
     } catch (e) {
       if (e.code === '23505') {

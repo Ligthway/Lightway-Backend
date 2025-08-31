@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Length, Validate } from 'class-validator';
+import { IsEmail, IsString, Length } from 'class-validator';
 import { IsPasswordStrong } from '@common/constraints/password.constraint';
 
 export class LoginDto {
@@ -19,6 +19,6 @@ export class LoginDto {
   })
   @IsString()
   @Length(8, 40)
-  @Validate(IsPasswordStrong)
+  @IsPasswordStrong({message: "Password isn't strong enough"})
   password: string;
 }

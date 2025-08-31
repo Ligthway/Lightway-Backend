@@ -1,3 +1,4 @@
+import {Roles} from '@common/enums/roles.enum';
 import {
   pgEnum,
   pgTable,
@@ -5,7 +6,7 @@ import {
   text
 } from 'drizzle-orm/pg-core';
 
-export const userRoleEnum = pgEnum('user_role', ['admin', 'user']);
+export const userRoleEnum = pgEnum('user_role', [Roles.EndUser, Roles.LocationManager, Roles.OrganizationAdmin]);
 
 export const users = pgTable('users', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

@@ -1,10 +1,12 @@
 import {
+  registerDecorator,
+  ValidationOptions,
   ValidatorConstraint,
-  ValidatorConstraintInterface
+  ValidatorConstraintInterface,
 } from 'class-validator';
 
-@ValidatorConstraint({ name: 'isPasswordStrong', async: false })
-export class IsPasswordStrong implements ValidatorConstraintInterface {
+@ValidatorConstraint({ name: 'IsPasswordStrongConstraint', async: false })
+export class IsPasswordStrongConstraint implements ValidatorConstraintInterface {
   validate(password: string) {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
@@ -17,4 +19,17 @@ export class IsPasswordStrong implements ValidatorConstraintInterface {
   defaultMessage() {
     return 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character';
   }
+}
+
+export function IsPasswordStrong(validationOptions?: ValidationOptions):PropertyDecorator{
+  return (object: any, propertyName:string)=>{
+    registerDecorator({
+      name:'IsPasswordStrong',
+      target: object.constructor,
+      propertyName,
+      options:validationOptions,
+      constraints:[],
+      validator:IsPasswordStrongConstraint
+    });
+  };
 }

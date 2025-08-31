@@ -52,6 +52,6 @@ export class RegisterDto {
   })
   @IsString()
   @Length(8, 40)
-  @Validate(IsPasswordStrong)
+  @IsPasswordStrong({message: "Password isn't strong enough"})
   password: string;
 }
