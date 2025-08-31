@@ -12,6 +12,9 @@ import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
 import { AuthService } from '@modules/auth/auth.service';
+import { RolesGuard } from '@guards/roles.guard';
+import { Roles } from '@common/enums/roles.enum';
+import { Role } from '@common/decorators/roles.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -31,3 +34,5 @@ export class AuthController {
     return this.authService.registerOrgAdmin(registerDto);
   }
 }
+
+//de adaugat admin prost care poate fi facut de admin boss
