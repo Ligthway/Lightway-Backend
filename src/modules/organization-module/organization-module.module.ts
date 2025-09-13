@@ -7,4 +7,4 @@ import { RolesGuard } from '@guards/roles.guard';
   controllers: [OrganizationModuleController],
   providers: [OrganizationModuleService, RolesGuard]
 })
-export class OrganizationModuleModule {}
+export class OrganizationModule {}

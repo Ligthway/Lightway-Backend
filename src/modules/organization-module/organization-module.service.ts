@@ -17,11 +17,12 @@ export class OrganizationModuleService extends CommonService {
   async create(createDto: CreateOrganizationDto) {
     try {
       await this.db.insert(organizations).values({
-        name: createDto.name
+        name: createDto.name,
+        adminId: this.userID
       });
     } catch (e) {
       if (e.code === '23505') {
-        throwConflictException('Email already in use');
+        throwConflictException('Name already in use');
       }
       throw new InternalServerErrorException();
     }

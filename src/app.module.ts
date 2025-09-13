@@ -4,14 +4,10 @@ import { AuthenticatedGuard } from '@guards/authenticated.guard';
 import { AuthModule } from '@modules/auth/auth.module';
 import { DatabaseModule } from '@config/database.module';
 import { LocalStorageModule } from '@config/local-storage.module';
-import { OrganizationModuleModule } from './organization-module/organization-module.module';
-import { OrganizationsModuleModule } from './src/modules/organizations-module/organizations-module.module';
-import { OrganizationModuleModule } from './organization-module/organization-module.module';
-import { OrganizationsModuleModule } from './src/modules/organizations-module/organizations-module.module';
-import { OrganizationsModuleModule } from './src/modules/organizations-module/organizations-module.module';
+import { OrganizationModule } from '@modules/organization-module/organization-module.module';
 
 @Module({
-  imports: [DatabaseModule, LocalStorageModule, AuthModule, OrganizationModuleModule, OrganizationsModuleModule],
+  imports: [DatabaseModule, LocalStorageModule, AuthModule, OrganizationModule],
   providers: [
     {
       provide: APP_GUARD,
