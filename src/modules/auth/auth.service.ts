@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CommonService } from '@common/services/common.service';
 import { JwtService } from '@nestjs/jwt';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { BcryptUtils } from '@common/utils/bcrypt.utils';
 import { firstRow } from '@common/utils/drizzle.utils';
 import { users } from '@schema/users';
@@ -10,13 +10,13 @@ import { RegisterDto } from '@modules/auth/dto/register.dto';
 import { throwConflictException } from '@common/exceptions/conflict.exception';
 import { Roles } from '@common/enums/roles.enum';
 import { LocManDto } from '@modules/auth/dto/loc-man.dto';
-import {OrganizationModuleService} from '@modules/organization-module/organization-module.service';
+import {OrganizationsService} from '@modules/organizations/organizations.service';
 
 @Injectable()
 export class AuthService extends CommonService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly orgService: OrganizationModuleService) {
+    private readonly orgService: OrganizationsService) {
     super();
   }
 
@@ -90,5 +90,24 @@ export class AuthService extends CommonService {
       }
       throw new InternalServerErrorException();
     }
+  }
+
+  async findUserByName(firstName: string, lastName: string) {
+    const user = await firstRow(
+      this.db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.firstName, firstName),
+            eq(users.lastName, lastName),
+          ),
+        )
+        .limit(1),
+    );
+    if (!user) {
+      throwUnauthorizedException('User not found');
+    }
+    return user;
   }
 }

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOrganizationDto } from './dto/create-organization-module.dto';
-import { UpdateOrganizationModuleDto } from './dto/update-organization-module.dto';
 import { CommonService } from '@common/services/common.service';
 import { throwConflictException } from '@common/exceptions/conflict.exception';
 import { organizations } from '@schema/organizations';
@@ -9,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { throwNotFound } from '@common/exceptions/not-found.exception';
 
 @Injectable()
-export class OrganizationModuleService extends CommonService {
+export class OrganizationsService extends CommonService {
   constructor() {
     super();
   }
@@ -22,7 +21,9 @@ export class OrganizationModuleService extends CommonService {
       });
     } catch (e) {
       if (e.code === '23505') {
-        throwConflictException('Name already in use');
+        if(e.constraint === 'organizations_name_key') {
+          throwConflictException('Name already in use');
+        }
       }
       throw new InternalServerErrorException();
     }
@@ -32,11 +33,23 @@ export class OrganizationModuleService extends CommonService {
     return `This action returns all organizationModule`;
   }
 
-  async findOne(name: string) {
+  async findOne(elem: string | number) {
+
+    if(typeof elem === 'string') {
+      const rows = await this.db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.name, elem))
+        .limit(1);
+      if (rows.length === 0) {
+        throwNotFound('Organization not found');
+      }
+      return rows[0];
+    }
     const rows = await this.db
       .select()
       .from(organizations)
-      .where(eq(organizations.name, name))
+      .where(eq(organizations.id, elem))
       .limit(1);
     if (rows.length === 0) {
       throwNotFound('Organization not found');
@@ -44,7 +57,7 @@ export class OrganizationModuleService extends CommonService {
     return rows[0];
   }
 
-  update(id: number, updateOrganizationModuleDto: UpdateOrganizationModuleDto) {
+  update(id: number) {
     return `This action updates a #${id} organizationModule`;
   }
 
