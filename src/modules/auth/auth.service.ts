@@ -11,6 +11,7 @@ import { throwConflictException } from '@common/exceptions/conflict.exception';
 import { Roles } from '@common/enums/roles.enum';
 import { LocManDto } from '@modules/auth/dto/loc-man.dto';
 import {OrganizationsService} from '@modules/organizations/organizations.service';
+import { throwNotFound } from '@common/exceptions/not-found.exception';
 
 @Injectable()
 export class AuthService extends CommonService {
@@ -106,7 +107,7 @@ export class AuthService extends CommonService {
         .limit(1),
     );
     if (!user) {
-      throwUnauthorizedException('User not found');
+      throwNotFound('User not found');
     }
     return user;
   }
